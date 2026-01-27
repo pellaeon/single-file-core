@@ -35,6 +35,7 @@ export {
 	init,
 	initMulti,
 	getPageData,
+	getPageDataAndResources,
 	processors,
 	vendor,
 	modules,
@@ -56,6 +57,98 @@ function initMulti(initOptions) {
 }
 
 async function getPageData(options = {}, initOptions, doc, win) {
+	if (doc === undefined) {
+		doc = globalThis.document;
+	}
+	if (win === undefined) {
+		win = globalThis;
+	}
+	const frames = processors.frameTree;
+	let framesSessionId;
+	init(initOptions);
+	if (doc && win) {
+		helper.initDoc(doc);
+		const preInitializationPromises = [];
+		if (!options.saveRawPage) {
+			let lazyLoadPromise;
+			if (options.loadDeferredImages) {
+				lazyLoadPromise = processors.lazy.process(options);
+				if (options.loadDeferredImagesBeforeFrames) {
+					await lazyLoadPromise;
+				}
+			}
+			if (!options.removeFrames && frames && globalThis.frames) {
+				let frameTreePromise;
+				if (options.loadDeferredImages) {
+					frameTreePromise = new Promise(resolve => globalThis.setTimeout(() => resolve(frames.getAsync(options)), options.loadDeferredImagesBeforeFrames || !options.loadDeferredImages ? 0 : options.loadDeferredImagesMaxIdleTime));
+				} else {
+					frameTreePromise = frames.getAsync(options);
+				}
+				if (options.loadDeferredImagesBeforeFrames) {
+					options.frames = await frameTreePromise;
+				} else {
+					preInitializationPromises.push(frameTreePromise);
+				}
+			}
+			if (options.loadDeferredImages && !options.loadDeferredImagesBeforeFrames) {
+				preInitializationPromises.push(lazyLoadPromise);
+			}
+		}
+		if (!options.loadDeferredImagesBeforeFrames) {
+			[options.frames] = await Promise.all(preInitializationPromises);
+		}
+		framesSessionId = options.frames && options.frames.sessionId;
+	}
+	options.doc = doc;
+	options.win = win;
+	options.insertCanonicalLink = true;
+
+	const externalOnProgress = options.onprogress;
+	options.onprogress = async event => {
+		if (event.type === event.RESOURCES_INITIALIZED && doc && win && options.loadDeferredImages) {
+			processors.lazy.resetZoomLevel(options);
+		}
+
+		if (externalOnProgress) {
+			await externalOnProgress(event);
+		}
+	};
+
+	const processor = new SingleFile(options);
+	await processor.run();
+	if (framesSessionId) {
+		frames.cleanup(framesSessionId);
+	}
+	const pageData = await processor.getPageData();
+	if (options.compressContent) {
+		const blob = await processors.compression.process(pageData, {
+			insertTextBody: options.insertTextBody,
+			url: options.url,
+			createRootDirectory: options.createRootDirectory,
+			selfExtractingArchive: options.selfExtractingArchive,
+			extractDataFromPage: options.extractDataFromPage,
+			preventAppendedData: options.preventAppendedData,
+			insertCanonicalLink: options.insertCanonicalLink,
+			insertMetaNoIndex: options.insertMetaNoIndex,
+			insertMetaCSP: options.insertMetaCSP,
+			password: options.password,
+			zipScript: options.zipScript,
+			embeddedImage: options.embeddedImage,
+			embeddedPdf: options.embeddedPdf
+		});
+		delete pageData.resources;
+		const reader = new globalThis.FileReader();
+		reader.readAsArrayBuffer(blob);
+		const arrayBuffer = await new Promise((resolve, reject) => {
+			reader.addEventListener("load", () => resolve(reader.result), false);
+			reader.addEventListener("error", event => reject(event.detail.error), false);
+		});
+		pageData.content = Array.from(new Uint8Array(arrayBuffer));
+	}
+	return pageData;
+}
+
+async function getPageDataAndResources(options = {}, initOptions, doc, win) {
 	if (doc === undefined) {
 		doc = globalThis.document;
 	}
