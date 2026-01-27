@@ -416,6 +416,7 @@ function getProcessorHelperClass(utilInstance) {
 		getAdditionalPageData(doc, content, pageResources) {
 			const resources = {};
 			let textContent = content;
+			console.log("processor helper: pageResources ", Object.keys(pageResources));
 			pageResources.stylesheets.forEach(resource => textContent += resource.content);
 			Object.keys(pageResources).forEach(resourceType => {
 				const unusedResources = Array.from(pageResources[resourceType]).filter(([, value]) => !textContent.includes(value.name));

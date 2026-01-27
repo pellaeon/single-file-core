@@ -25,6 +25,7 @@ import {
 	getProcessorHelperClass,
 	cssTree
 } from "./processor-helper.js";
+import { getProcessorHelperClass as getProcessorWithResourcesClass } from "./lib/processor-helper.js";
 
 const DEBUG = false;
 
@@ -35,8 +36,14 @@ const JSON = globalThis.JSON;
 let util;
 
 export {
-	getClass
+	getClass,
+	getMultiFileClass
 };
+
+function getMultiFileClass(...args) {
+	[util] = args;
+	return MultiFileClass;
+}
 
 function getClass(...args) {
 	[util] = args;
@@ -47,6 +54,38 @@ class SingleFileClass {
 	constructor(options) {
 		this.options = options;
 		const ProcessorHelper = getProcessorHelperClass(options, util);
+		this.processorHelper = new ProcessorHelper();
+	}
+	async run() {
+		const waitForUserScript = globalThis[util.WAIT_FOR_USERSCRIPT_PROPERTY_NAME];
+		if (this.options.userScriptEnabled && waitForUserScript) {
+			await waitForUserScript(util.ON_BEFORE_CAPTURE_EVENT_NAME, this.options);
+		}
+		this.runner = new Runner(this.options, this.processorHelper, true);
+		await this.runner.loadPage();
+		await this.runner.initialize();
+		if (this.options.userScriptEnabled && waitForUserScript) {
+			await waitForUserScript(util.ON_AFTER_CAPTURE_EVENT_NAME, this.options);
+		}
+		await this.runner.run();
+	}
+	cancel() {
+		this.cancelled = true;
+		if (this.runner) {
+			this.runner.cancel();
+		}
+	}
+	getPageData() {
+		return this.runner.getPageData();
+	}
+}
+
+class MultiFileClass {
+	constructor(options) {
+		this.options = options;
+		// Just get the processor helper with resources to handle multi-file specific data.
+		// helper-inline omits the page resources in getAdditionalPageData()
+		const ProcessorHelper = getProcessorWithResourcesClass(util);
 		this.processorHelper = new ProcessorHelper();
 	}
 	async run() {
@@ -602,6 +641,8 @@ class Processor {
 		if (this.options.retrieveLinks) {
 			pageData.links = Array.from(new Set(Array.from(this.doc.links).map(linkElement => linkElement.href)));
 		}
+		console.log("in browser Processor: ", Object.keys(pageData));
+		console.log("additionaldata: ", Object.keys(additionalData));
 		return pageData;
 	}
 

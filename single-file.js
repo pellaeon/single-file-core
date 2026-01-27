@@ -29,20 +29,29 @@ import * as helper from "./core/helper.js";
 import * as util from "./core/util.js";
 
 let SingleFile;
+let MultiFile;
 
 export {
 	init,
+	initMulti,
 	getPageData,
 	processors,
 	vendor,
 	modules,
 	helper,
-	SingleFile
+	SingleFile,
+	MultiFile
 };
 
 function init(initOptions) {
 	if (typeof SingleFile == "undefined") {
 		SingleFile = core.getClass(util.getInstance(initOptions));
+	}
+}
+
+function initMulti(initOptions) {
+	if (typeof MultiFile == "undefined") {
+		MultiFile = core.getMultiFileClass(util.getInstance(initOptions));
 	}
 }
 
