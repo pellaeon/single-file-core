@@ -35,7 +35,7 @@ export {
 	init,
 	initMulti,
 	getPageData,
-	getPageDataAndResources,
+	getPageDataAndResources1,
 	processors,
 	vendor,
 	modules,
@@ -45,18 +45,23 @@ export {
 };
 
 function init(initOptions) {
+	const stack = new Error().stack;
+	console.debug("[SINGLEFILE DEBUG] init called with options:", Object.keys(initOptions || {}));
+	console.debug("[SINGLEFILE DEBUG] init Call stack:", stack);
 	if (typeof SingleFile == "undefined") {
 		SingleFile = core.getClass(util.getInstance(initOptions));
 	}
 }
 
 function initMulti(initOptions) {
+	console.debug("[SINGLEFILE DEBUG] initMulti called with options:", Object.keys(initOptions || {}));
 	if (typeof MultiFile == "undefined") {
 		MultiFile = core.getMultiFileClass(util.getInstance(initOptions));
 	}
 }
 
 async function getPageData(options = {}, initOptions, doc, win) {
+	console.debug("[SINGLEFILE DEBUG] getPageData called with options:", Object.keys(options || {}));
 	if (doc === undefined) {
 		doc = globalThis.document;
 	}
@@ -148,7 +153,7 @@ async function getPageData(options = {}, initOptions, doc, win) {
 	return pageData;
 }
 
-async function getPageDataAndResources(options = {}, initOptions, doc, win) {
+async function getPageDataAndResources1(options = {}, initOptions, doc, win) {
 	if (doc === undefined) {
 		doc = globalThis.document;
 	}

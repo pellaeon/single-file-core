@@ -83,6 +83,9 @@ class SingleFileClass {
 class MultiFileClass {
 	constructor(options) {
 		this.options = options;
+		// we have to set compressContent despite we won't actually compress the content,
+		// compressContent makes the underlying processors return full references to resource data instead of inlining them.
+		this.options.compressContent = true;
 		// Just get the processor helper with resources to handle multi-file specific data.
 		// helper-inline omits the page resources in getAdditionalPageData()
 		const ProcessorHelper = getProcessorWithResourcesClass(util);
@@ -304,6 +307,7 @@ class Runner {
 	}
 
 	async getPageData() {
+		console.debug("[RUNNER DEBUG] Getting page data for", this.options.url);
 		if (this.root) {
 			await this.onprogress(new ProgressEvent(PAGE_ENDED, { pageURL: this.options.url, options: this.options }));
 		}
@@ -540,6 +544,7 @@ class Processor {
 	}
 
 	async getPageData() {
+		console.debug("[PROCESSOR DEBUG] Getting page data for", this.baseURI);
 		let commentText;
 		util.postProcessDoc(this.doc);
 		const url = util.parseURL(this.baseURI);
