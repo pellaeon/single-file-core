@@ -307,7 +307,6 @@ class Runner {
 	}
 
 	async getPageData() {
-		console.debug("[RUNNER DEBUG] Getting page data for", this.options.url);
 		if (this.root) {
 			await this.onprogress(new ProgressEvent(PAGE_ENDED, { pageURL: this.options.url, options: this.options }));
 		}
@@ -544,7 +543,6 @@ class Processor {
 	}
 
 	async getPageData() {
-		console.debug("[PROCESSOR DEBUG] Getting page data for", this.baseURI);
 		let commentText;
 		util.postProcessDoc(this.doc);
 		const url = util.parseURL(this.baseURI);

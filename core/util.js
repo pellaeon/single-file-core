@@ -81,10 +81,6 @@ export {
 
 function getInstance(utilOptions) {
 	utilOptions = utilOptions || {};
-	const stack = new Error().stack;
-	console.debug("[UTIL DEBUG] getInstance called with utilOptions keys:", Object.keys(utilOptions));
-	console.debug("[UTIL DEBUG] Call stack:", stack);
-	// for multi-file, getInstance function gets called 3 times, but the last call does not contain utilOptions. for single-file, this function is called only twice
 	utilOptions.fetch = utilOptions.fetch || fetch;
 	utilOptions.frameFetch = utilOptions.frameFetch || utilOptions.fetch || fetch;
 	return {
